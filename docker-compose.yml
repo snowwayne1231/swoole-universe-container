@@ -1,0 +1,78 @@
+version: "3"
+services:
+  nginx:
+    build:
+      context: ./nginx
+      args:
+        NGINX_VERSION: nginx:${NGINX_VERSION}
+    container_name: nginx
+    ports:
+      - "${NGINX_HTTP_HOST_PORT}:80"
+      - "${NGINX_HTTPS_HOST_PORT}:443"
+    volumes:
+      # - ${NGINX_SSL_CERTIFICATE_DIR}:/ssl:rw
+      - ${NGINX_CONFD_DIR}:/etc/nginx/conf.d/:rw
+      - ${NGINX_CONF_FILE}:/etc/nginx/nginx.conf:ro
+      - ${NGINX_LOG_DIR}:/var/log/nginx/:rw
+      - ${SOURCE_DIR}:/opt/webserver/:rw
+    environment:
+      TZ: "$TZ"
+    restart: always
+    networks:
+      - default
+      # 可以把-default 改成下列配置，以固定容器IP
+      #default:
+      #  ipv4_address: 10.0.0.10
+
+  php:
+    build:
+      context: ./php
+      args:
+        # PHP_VERSION: phpswoole/swoole:php8.4-alpine
+        PHP_VERSION: phpswoole/swoole:4.8-php7.4-alpine
+        TZ: "$TZ"
+    container_name: php
+    ports:
+      - "56101:56101"
+      - "56102:56102"
+      - "56103:56103"
+      - "56104:56104"
+      - "56105:56105"
+      - "56106:56106"
+      - "9001:9001"
+      # - "57301:57301"
+      # - "57302:57302"
+      # - "57303:57303"
+      # - "57304:57304"
+      # - "57305:57305"
+      # - "8102:8102"
+      # - "8103:8103"
+    expose:
+      - 9501
+    extra_hosts:
+      - "www.localsite.com:172.17.0.1"
+    volumes:
+      - ${PHP_CONFIG_INI_FILE}:/usr/local/etc/php/php.ini:rw
+      - ${SUPERVISOR_CONFIG_FILE}:/etc/supervisor/conf.d/supervisord.conf:rw
+      - ${SOURCE_DIR}:/opt/webserver/:rw
+      - ${WEB_LOG_DIR}:/opt/weblogs/:rw
+    restart: always
+    cap_add:
+      - SYS_PTRACE
+    networks:
+      - default
+      #
+  redis:
+    image: redis:6.2.5-alpine
+    container_name: redis-server
+    ports:
+      - "6379:6379"
+    command: redis-server --port 6379 --requirepass "LxwAwKtOC13Q"
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
