@@ -11,7 +11,7 @@ cd api_universe_swoole
 cp ./env/.env.qa1 .env
 
 ```
-需要修改 .env (redis to map docker file )
+需要修改 .env (example: redis set to map the docker file)
 
 
 ```Shell
