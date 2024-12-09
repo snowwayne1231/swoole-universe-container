@@ -1,0 +1,27 @@
+{
+  "name": "1.Game",
+  "short_name": "1.Game",
+  "description": "The Best Crypto Casino Games & Casino Slot Games - Crypto Gambling",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "start_url": "/coinfans/skin013/?plat_id=30037&channel_id=30037001",
+  "icons": [
+    {
+      "src": "app.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "app_192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "app_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

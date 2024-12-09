@@ -1,8 +1,182 @@
 <html>
-    <head>
 
-    </head>
-    <body>
-        PHP+Swoole Nginx Test Success!
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reader</title>
+    <style>
+        #app {
+            margin: 0 auto;
+
+        }
+
+        #app .content {
+            min-height: 80vh;
+            background-color: beige;
+        }
+
+        #search {
+            width: 60%;
+            padding: 10px;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        #results {
+            min-height: 66vh;
+            max-height: 72vh;
+            overflow-y: auto;
+        }
+        #results li{
+            padding: 5px;;
+            font-size: 18px;
+        }
+        #results li span {
+            color: gray;
+            font-size: 14px;
+        }
+        #results li dd {
+            margin: 0;
+        }
+
+        #info {
+            color: blue;
+        }
+        #token {
+            width: 920px;
+        }
+    </style>
+</head>
+<body>
+
+
+    <script>
+        var globalData = {};
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('fileInput').addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const jsonData = JSON.parse(e.target.result);
+                            displayData(jsonData, true);
+                        } catch (error) {
+                            console.error('Error parsing JSON:', error);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            document.getElementById('search').addEventListener('input', function(event) {
+                const search = event.target.value;
+                const results = globalData.urls.filter(item => item.name.includes(search) || item.url.includes(search));
+                displayResults(results);
+            });
+
+            var jsondata = localStorage.getItem('jsondata');
+            if (jsondata) {
+                displayData(JSON.parse(jsondata));
+            }
+        });
+        
+
+        function displayData(data, isnew = false) {
+            console.log(data);
+            globalData.jsondata = data;
+            globalData.urls = [];
+            
+            if (isnew) {
+                localStorage.setItem('jsondata', JSON.stringify(data));
+            }
+            
+            traverseObject(data);
+            console.log(globalData);
+        }
+
+        function traverseObject(obj) {
+            let stack = obj.item;
+            // console.log(stack);
+            while (stack.length) {
+                let current = stack.pop();
+                // console.log(current);
+                if (current.request && current.request.url && current.request.url.raw) {
+                    globalData.urls.push({name: current.name, url: current.request.url.raw});
+                } else if (current.item && current.item.length) {
+                    stack.push(...current.item)
+                }
+            }
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('results');
+            const infodiv = document.getElementById('info');
+            resultsContainer.innerHTML = '';
+            results.slice(0,20).forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `<dd>${item.name}:</dd><span>${item.url}</span>`;
+                resultsContainer.appendChild(li);
+            });
+            infodiv.innerHTML = `Total Results: ${results.length}`;
+        }
+
+    </script>
+
+
+    <div id="app">
+        <input type="file" id="fileInput" accept=".json" />
+        
+        <input type="text" id="userid" placeholder="USERID" />
+        <input type="text" id="token" placeholder="TOKEN" />
+        
+        <div class="content">
+            <input type="text" id="search" placeholder="Search">
+            <ul id="results"></ul>
+            <div id="info">Total Results: 0</div>
+        </div>
+    </div>
+
+    <script>
+        var token = "=gD;ycz;1;z;3EzImVGZhlTO3EGZhZDNhFT;2EmN4ATN2Uj;mlTNzIz;3Q2I3;D;yQD;w;zIjJ2Yz;TZmdjNxUjYkZDNwYGZxQG;1YGZzI2;jNTZyczI4QjO2AjOwEDI3ATLyETL0ID;y;i;";
+        var user = 30042037;
+        document.addEventListener('DOMContentLoaded', function() {
+            var lstoken = localStorage.getItem('token');
+            var lsuser = localStorage.getItem('user');
+            if (lstoken && lsuser) {
+                token = lstoken;
+                user = parseInt(lsuser);
+                document.getElementById('token').value = token;
+                document.getElementById('userid').value = user;
+            }
+            document.getElementById('token').addEventListener('input', function(event) {
+                token = event.target.value;
+                localStorage.setItem('token', token);
+            });
+            document.getElementById('userid').addEventListener('input', function(event) {
+                user = parseInt(event.target.value);
+                localStorage.setItem('user', user);
+            });
+        });
+
+        function ff(url, toekn, user) {
+            return fetch(url, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    "plat_id": 30037,
+                    "channel_id": 30037001,
+                    "device": "d225a667-19da-492c-af4f-313af1b271e2",
+                    "token": toekn,
+                    "user_id": user
+                }),
+            }).then(res => res.json().then((r) => {console.log(r); return r;}));
+        }
+        
+        
+        
+        // for (let i = 0; i< 10; i++) {
+        //     ff(`/api/user/${user}/sign/store`, token, user)
+        // }
+    </script>
+</body>
 </html>
