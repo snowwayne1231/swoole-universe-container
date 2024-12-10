@@ -70,9 +70,39 @@ services:
     command: redis-server --port 6379 --requirepass "LxwAwKtOC13Q"
     networks:
       - default
+  mongo:
+    image: mongo:5.0.30
+    container_name: mongo-server
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      - default
+      # - mongo-network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: wiDF4PtMPLnV
+      MONGO_INITDB_DATABASE: apiuniversedb_bet
+      MONGO_INITDB_REPLSET: rs0
+  
+  # mongo2:
+  #   image: mongo:5.0.30
+  #   container_name: mongo-server2
+  #   restart: always
+  #   ports:
+  #     - "27018:27017"
+  #   networks:
+  #     - default
+  #     - mongo-network
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: user
+  #     MONGO_INITDB_ROOT_PASSWORD: wiDF4PtMPLnV
+  #     MONGO_INITDB_DATABASE: apiuniversedb_bet
+  #     MONGO_INITDB_REPLSET: rs0
 
 networks:
   default:
     driver: bridge
     ipam:
       driver: default
+  # mongo-network:

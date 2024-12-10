@@ -11,8 +11,10 @@ cd api_universe_swoole
 cp ./env/.env.qa1 .env
 
 ```
-需要修改 .env (example: redis set to map the docker file)
-202412月 建議測試環境 mysql 34.96.218.9
+需要修改 .env 
+1. 確認 redis connect to docker container
+2. 確認 mongo connect to docker container and cancel the replica_set
+3. (2024 12月) 建議測試環境 mysql 34.96.218.9
 
 
 ```Shell
