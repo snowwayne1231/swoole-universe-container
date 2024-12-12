@@ -29,7 +29,8 @@ services:
       context: ./php
       args:
         # PHP_VERSION: phpswoole/swoole:php8.4-alpine
-        PHP_VERSION: phpswoole/swoole:4.8-php7.4-alpine
+        # PHP_VERSION: phpswoole/swoole:4.8-php7.4-alpine
+        PHP_VERSION: phpswoole/swoole:4.8-php7.2-alpine
         TZ: "$TZ"
     container_name: php
     ports:

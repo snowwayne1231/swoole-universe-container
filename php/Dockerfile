@@ -19,7 +19,7 @@ RUN docker-php-ext-configure intl \
 
 RUN apk add redis
 
-RUN pecl install mongodb \
+RUN pecl install mongodb-1.9.1 \
     && docker-php-ext-enable mongodb
 
 # ssh2 for lower php 8.0
