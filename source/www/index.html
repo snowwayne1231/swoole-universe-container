@@ -45,6 +45,49 @@
         #token {
             width: 920px;
         }
+
+        .modal {
+            position: fixed;
+            z-index: 2;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            min-height: 200px;
+            text-align: center;
+        }
+        .modal .close {
+            font-size: 24px;
+            padding: 4px 12px;
+            border-radius: 50%;
+            border: 1px solid #888;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            position: absolute;
+            top: 0px;
+            right: 0px;
+        }
+        .modal textarea.post-data {
+            width: 100%;
+            height: 360px;
+            padding: 6px;
+        }
+        .modal .btn-send-post {
+            padding: 12px 40px;
+        }
     </style>
 </head>
 <body>
@@ -53,6 +96,7 @@
     <script>
         var globalData = {};
         document.addEventListener('DOMContentLoaded', function() {
+            // postman collection
             document.getElementById('fileInput').addEventListener('change', function(event) {
                 const file = event.target.files[0];
                 if (file) {
@@ -61,6 +105,22 @@
                         try {
                             const jsonData = JSON.parse(e.target.result);
                             displayData(jsonData, true);
+                        } catch (error) {
+                            console.error('Error parsing JSON:', error);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+            // postman environment
+            document.getElementById('fileEnvInput').addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const jsonData = JSON.parse(e.target.result);
+                            reciveEnvironment(jsonData, true);
                         } catch (error) {
                             console.error('Error parsing JSON:', error);
                         }
@@ -83,7 +143,6 @@
         
 
         function displayData(data, isnew = false) {
-            console.log(data);
             globalData.jsondata = data;
             globalData.urls = [];
             
@@ -91,18 +150,26 @@
                 localStorage.setItem('jsondata', JSON.stringify(data));
             }
             
-            traverseObject(data);
-            console.log(globalData);
+            traverseObject(data, globalData.urls);
+            console.log('globalData: ', globalData);
         }
 
-        function traverseObject(obj) {
+        function reciveEnvironment(data, isnew = false) {
+            console.log('reciveEnvironment: ', data);
+            globalData.environment = data;
+            if (isnew) {
+                localStorage.setItem('environment', JSON.stringify(data));
+            }
+        }
+
+        function traverseObject(obj, ary_flated) {
             let stack = obj.item;
             // console.log(stack);
             while (stack.length) {
                 let current = stack.pop();
                 // console.log(current);
                 if (current.request && current.request.url && current.request.url.raw) {
-                    globalData.urls.push({name: current.name, url: current.request.url.raw});
+                    ary_flated.push({name: current.name, url: current.request.url.raw, body: current.request.body});
                 } else if (current.item && current.item.length) {
                     stack.push(...current.item)
                 }
@@ -115,39 +182,123 @@
             resultsContainer.innerHTML = '';
             results.slice(0,20).forEach(item => {
                 const li = document.createElement('li');
-                li.innerHTML = `<dd>${item.name}:</dd><span>${item.url}</span>`;
+                li.innerHTML = `<dd>${item.name}:</dd><span>${item.url}</span><button data-name=${item.name} onclick="handleClick(event)">测试连线</button>`;
                 resultsContainer.appendChild(li);
             });
             infodiv.innerHTML = `Total Results: ${results.length}`;
         }
 
+        function replaceByEnv(str) {
+            const env = globalData.environment.values;
+            return str.replace(/{{([a-z\d_-]+)}}/gi, function(m, e) {
+                const findEnv = env.find(f => f.key === e);
+                const val = findEnv ? findEnv.value : m;
+                return val;
+            });
+        }
+
+        function handleClick(event) {
+            const dataName = event.target.getAttribute('data-name');
+            const data = globalData.urls.find(item => item.name === dataName);
+            const url_base = data.url;
+            const env = globalData.environment.values;
+            // const formatdata = (data.body.formdata || []).filter(e => !e.disabled);
+            if (!data || !data.body) {
+                return console.log('No data found');
+            }
+            const formatdata = (data.body.formdata || []);
+            const postdata = {};
+            formatdata.map(e => {
+                var newVal = replaceByEnv(e.value);
+                const regInt = /^\d+$/;
+                if (regInt.test(newVal)) {
+                    newVal = parseInt(newVal, 10);
+                }
+                postdata[e.key] = newVal;
+            });
+            openModalForm(replaceByEnv(url_base), postdata);
+            // myFetch(replaceByEnv(url_base), postdata).then((r) => {
+            //     console.log('[Response] ', r);
+            // });
+        }
+
+        function openModalForm(url, postdata) {
+            console.log('[Request] url: ', url);
+            console.log('[Request] postdata: ', postdata);
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                    
+                        <label>URL: </label>
+                        <span>${url}</span>
+                        
+                        <div style="border: 3px #333 outset">
+                            <textarea class="post-data">
+                                
+                            </textarea>
+                        </div>
+                        <div>
+                            <button class="btn-send-post">POST</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            const {token, ...newPostdata} = postdata;
+            const textareaString = JSON.stringify(newPostdata, null, 2);
+            modal.querySelector('.modal-content').addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+            modal.querySelector('.post-data').value = textareaString;
+            modal.addEventListener('click', function(event) {
+                event.stopPropagation();
+                modal.remove();
+            });
+            modal.querySelector('.close').addEventListener('click', function() {
+                modal.remove();
+            });
+            modal.querySelector('.btn-send-post').addEventListener('click', function() {
+                const editedPostdata = JSON.parse(modal.querySelector('.post-data').value);
+                myFetch(url, {...postdata, ...editedPostdata}).then((r) => {
+                    console.log('[Response] ', r);
+                });
+                modal.remove();
+            });
+        }
+
+        function myFetch(url, postdata) {
+            return fetch(url, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    "device": "d225a667-19da-492c-af4f-313af1b271e2",
+                    "token": globalData.token,
+                    "user_id": globalData.user,
+                    ...postdata
+                }),
+            }).then(res => res.json().then((r) => {console.log(r); return r;}));
+        }
+
     </script>
 
 
-    <div id="app">
-        <input type="file" id="fileInput" accept=".json" />
-        
-        <input type="text" id="userid" placeholder="USERID" />
-        <input type="text" id="token" placeholder="TOKEN" />
-        
-        <div class="content">
-            <input type="text" id="search" placeholder="Search">
-            <ul id="results"></ul>
-            <div id="info">Total Results: 0</div>
-        </div>
-    </div>
-
     <script>
-        var token = "=gD;ycz;1;z;3EzImVGZhlTO3EGZhZDNhFT;2EmN4ATN2Uj;mlTNzIz;3Q2I3;D;yQD;w;zIjJ2Yz;TZmdjNxUjYkZDNwYGZxQG;1YGZzI2;jNTZyczI4QjO2AjOwEDI3ATLyETL0ID;y;i;";
-        var user = 30042037;
         document.addEventListener('DOMContentLoaded', function() {
             var lstoken = localStorage.getItem('token');
             var lsuser = localStorage.getItem('user');
-            if (lstoken && lsuser) {
+            var environment = localStorage.getItem('environment');
+            if (lstoken || lsuser) {
                 token = lstoken;
                 user = parseInt(lsuser);
                 document.getElementById('token').value = token;
                 document.getElementById('userid').value = user;
+                globalData.token = token;
+                globalData.user = user;
+            }
+            if (environment) {
+                reciveEnvironment(JSON.parse(environment));
             }
             document.getElementById('token').addEventListener('input', function(event) {
                 token = event.target.value;
@@ -158,25 +309,37 @@
                 localStorage.setItem('user', user);
             });
         });
-
-        function ff(url, toekn, user) {
-            return fetch(url, {
-                method: "POST",
-                body: JSON.stringify({ 
-                    "plat_id": 30037,
-                    "channel_id": 30037001,
-                    "device": "d225a667-19da-492c-af4f-313af1b271e2",
-                    "token": toekn,
-                    "user_id": user
-                }),
-            }).then(res => res.json().then((r) => {console.log(r); return r;}));
-        }
-        
-        
-        
-        // for (let i = 0; i< 10; i++) {
-        //     ff(`/api/user/${user}/sign/store`, token, user)
-        // }
     </script>
+
+
+    <div id="app">
+        
+        <input type="text" id="userid" placeholder="USERID" />
+        <input type="text" id="token" placeholder="TOKEN" />
+        
+        <div class="content">
+            <input type="text" id="search" placeholder="Search">
+            <ul id="results"></ul>
+            <div id="info">Total Results: 0</div>
+        </div>
+        <table>
+            <tr>
+                <td>
+                    <label>Maravel Collection</label>
+                </td>
+                <td>
+                    <input type="file" id="fileInput" accept=".json" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Environment</label>
+                </td>
+                <td>
+                    <input type="file" id="fileEnvInput" accept=".json" />
+                </td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>
