@@ -85,6 +85,20 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: wiDF4PtMPLnV
       MONGO_INITDB_DATABASE: apiuniversedb_bet
       MONGO_INITDB_REPLSET: rs0
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql-server
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: nopassword
+      MYSQL_DATABASE: apiuniversedb_hk
+      MYSQL_USER: andesen
+      MYSQL_PASSWORD: aezahf2tho2wiew-
+    networks:
+      - default
   
   # mongo2:
   #   image: mongo:5.0.30
